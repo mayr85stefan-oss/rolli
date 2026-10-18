@@ -621,6 +621,7 @@ var len=function(c){var m=Math.floor(c/100),r=c%100;return (m?m+' m':'')+(m&&r?'
 /* ---------- Bausteine ---------- */
 /* Positions-Beutel: jede Position kommt gleich oft dran, aber in wechselnder Reihenfolge,
    nie zweimal direkt hintereinander die gleiche. So entsteht kein Muster. */
+var EGGN=3;
 var BAGS={};
 function bagPos(key,n){
   var b=BAGS[key];
@@ -1733,7 +1734,7 @@ function loadFrom(o){
   if(o.pet&&typeof o.pet==='object'){
     if(typeof o.pet.name==='string')s.pet.name=o.pet.name.slice(0,20);
     if(typeof o.pet.kind==='string'&&CK.some(function(c){return c.id===o.pet.kind;}))s.pet.kind=o.pet.kind;
-    if(o.pet.egg&&typeof o.pet.egg==='object'&&EGGS.some(function(e){return e.id===o.pet.egg.c;}))s.pet.egg={c:o.pet.egg.c,n:Math.max(0,Math.min(EGGN,Math.floor(num(o.pet.egg.n,0))))};
+    if(o.pet.egg&&typeof o.pet.egg==='object'&&EGGS.some(function(e){return e.id===o.pet.egg.c;}))s.pet.egg={c:o.pet.egg.c,n:(o.pet.egg.n===null?EGGN:Math.max(0,Math.min(EGGN,Math.floor(num(o.pet.egg.n,0)))))};
     s.pet.hunger=num(o.pet.hunger,s.pet.hunger);s.pet.fun=num(o.pet.fun,s.pet.fun);s.pet.xp=num(o.pet.xp,0);s.pet.last=num(o.pet.last,Date.now());if(typeof o.pet.sc==='number')s.pet.sc=Math.max(0,Math.min(3,Math.floor(o.pet.sc)));
   }
   if(Array.isArray(o.album))s.album=o.album.filter(function(a){return a&&typeof a.k==='string'&&typeof a.name==='string';}).slice(-60).map(function(a){return {k:a.k,name:a.name.slice(0,20),d:String(a.d||'').slice(0,10)};});
@@ -1749,7 +1750,7 @@ function loadFrom(o){
   }
   if(o.daily&&typeof o.daily==='object')s.daily={d:String(o.daily.d||''),got:!!o.daily.got};
   if(typeof o.pin==='string'&&/^\d{4}$/.test(o.pin)&&o.pin!=='9999')s.pin=o.pin;
-  s.dys=!!o.dys;
+  s.dys=!!o.dys;if(typeof o.voice==='string')s.voice=o.voice.slice(0,90);if(o.vstyle==='f'||o.vstyle==='n'||o.vstyle==='r')s.vstyle=o.vstyle;
   if(o.basis&&typeof o.basis==='object'){Object.keys(o.basis).slice(0,40).forEach(function(k){var v=+o.basis[k];if(v>=1&&v<=3)s.basis[k]=v;});}
   if(o.tag&&typeof o.tag==='object')s.tag={d:String(o.tag.d||''),l:o.tag.l?1:0,s:o.tag.s?1:0,p:o.tag.p?1:0};
   if(o.ptry&&typeof o.ptry==='object'){Object.keys(o.ptry).slice(0,120).forEach(function(k){var v=+o.ptry[k];if(v>0&&v<100)s.ptry[String(k).slice(0,40)]=Math.floor(v);});}
@@ -1807,7 +1808,6 @@ function streakDays(){
 var TH=[0,35,100,200],GRAD=300,STAGES=['Baby','Kind','Schlaukopf','Professor'];
 function stageOf(xp){return xp>=200?3:xp>=100?2:xp>=35?1:0;}
 function isEgg(){return !save.pet.kind&&!!save.pet.egg;}
-var EGGN=3;
 function hatchReady(){return isEgg()&&save.pet.egg.n>=EGGN;}
 function eggWarm(k){if(!isEgg()||!(k>0))return false;var e=save.pet.egg,b=e.n;e.n=Math.min(EGGN,e.n+k);return e.n>b;}
 function growPending(){var p=save.pet;if(!p||!p.kind)return false;var st=stageOf(p.xp);if(typeof p.sc!=='number'){p.sc=st;return false;}return st>p.sc;}
@@ -1988,8 +1988,58 @@ function setMusic(on){
 
 document.addEventListener('pointerdown',function f(){document.removeEventListener('pointerdown',f);if(save.music&&!musicTimer)setMusic(true);});
 var canSpeak=('speechSynthesis' in window)&&typeof SpeechSynthesisUtterance!=='undefined';
+var VOICES=[];
+function loadVoices(){try{VOICES=speechSynthesis.getVoices().filter(function(v){return /^de/i.test(v.lang);});}catch(e){}}
+if(canSpeak){loadVoices();try{speechSynthesis.addEventListener('voiceschanged',loadVoices);}catch(e){}}
+function voiceScore(v){
+  var n=(v.name+' '+(v.voiceURI||'')).toLowerCase(),s=0;
+  if(/neural|natural|online|enhanced|premium|wavenet|siri/.test(n))s+=4;
+  if(/google/.test(n))s+=2.5;
+  if(/anna|vicki|marlene|petra|katja|hedda|amala|seraphina|helena|female|weiblich|sabine|yannick/.test(n))s+=2;
+  if(/conrad|florian|killian|stefan|markus|male |männlich|hans|jan /.test(n))s-=1.5;
+  if(/compact|espeak|robot/.test(n))s-=3;
+  if(/^de[-_]de/i.test(v.lang))s+=1;
+  return s;
+}
+function pickVoice(){
+  if(!VOICES.length)loadVoices();
+  if(save.voice){var f=VOICES.filter(function(v){return v.name===save.voice;})[0];if(f)return f;}
+  var best=null,bs=-99;VOICES.forEach(function(v){var sc=voiceScore(v);if(sc>bs){bs=sc;best=v;}});
+  return best;
+}
+/* Rechenzeichen und Einheiten so umschreiben, wie ein Kind sie sagt */
+function sayClean(t){
+  t=String(t).replace(/<[^>]+>/g,' ').replace(/&amp;/g,'&').replace(/&nbsp;/g,' ');
+  t=t.replace(/(\d)\s*[·×]\s*(\d)/g,'$1 mal $2').replace(/\s[·×]\s/g,' mal ');
+  t=t.replace(/(\d)\s*:\s*(\d)/g,'$1 geteilt durch $2').replace(/\s:\s/g,' geteilt durch ');
+  t=t.replace(/\s*[−–]\s*(?=\d)/g,' minus ').replace(/\s\+\s/g,' plus ').replace(/\s*=\s*/g,' ist ');
+  t=t.replace(/(\d) (\d{3})(?!\d)/g,'$1$2');
+  t=t.replace(/€/g,' Euro').replace(/%/g,' Prozent').replace(/cm²/g,' Quadratzentimeter').replace(/m²/g,' Quadratmeter').replace(/(\d)\s*cm\b/g,'$1 Zentimeter').replace(/(\d)\s*km\b/g,'$1 Kilometer').replace(/(\d)\s*kg\b/g,'$1 Kilogramm').replace(/(\d)\s*ml\b/g,'$1 Milliliter').replace(/(\d)\s*mm\b/g,'$1 Millimeter');
+  t=t.replace(/z\.\s?B\./g,'zum Beispiel').replace(/[„“”"‚‘’]/g,'').replace(/\s+/g,' ').trim();
+  return t;
+}
+var VSTY={f:{p:1.6,r:1.08},n:{p:1.3,r:1.0},r:{p:1.1,r:.92}};
 function speak(t){
-  try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,'').replace(/&amp;/g,'&'));u.lang='de-DE';u.rate=.95;u.pitch=1.35;speechSynthesis.speak(u);}catch(e){}
+  if(!canSpeak)return;
+  try{
+    speechSynthesis.cancel();
+    var txt=sayClean(t);if(!txt)return;
+    var parts=txt.match(/[^.!?…]+[.!?…]*/g)||[txt],chunks=[],cur='';
+    parts.forEach(function(p){p=p.trim();if(!p)return;if(cur&&(cur+' '+p).length<70&&!/[!?]$/.test(cur)){cur+=' '+p;}else{if(cur)chunks.push(cur);cur=p;}});
+    if(cur)chunks.push(cur);
+    var v=pickVoice(),sty=VSTY[save.vstyle]||VSTY.f,ki=0;
+    try{ki=Math.max(0,CK.map(function(c){return c.id;}).indexOf(save.pet.kind));}catch(e){}
+    var off=((ki%5)-2)*.05;
+    setTimeout(function(){
+      chunks.forEach(function(c){
+        var u=new SpeechSynthesisUtterance(c);u.lang=(v&&v.lang)||'de-DE';if(v)u.voice=v;
+        var ex=/!$/.test(c),q=/\?$/.test(c);
+        u.pitch=Math.max(.5,Math.min(2,sty.p+off+(ex?.12:0)+(q?.08:0)+(Math.random()*.1-.03)));
+        u.rate=Math.max(.6,Math.min(1.4,sty.r+(ex?.04:0)+(Math.random()*.06-.02)));
+        u.volume=1;speechSynthesis.speak(u);
+      });
+    },60);
+  }catch(e){}
 }
 
 /* ---------- Bilder ---------- */
@@ -2963,6 +3013,12 @@ function parentView(){
   h+='<div class="card story"><h3>Testmodus</h3><p>Probier die App mit allen Münzen, Stufen, Tieren und Spielen aus. Selinas echter Spielstand wird dabei nicht verändert.</p><button class="btn" data-act="tteststart">Testmodus starten</button></div>';
   var pn0=pathNext(),ps=Math.min(save.pstart||0,PATH.length-1);
   h+='<div class="card story"><h3>Lernpfad</h3><p>Jetzt dran: <strong>'+(pn0?pstepName(pn0.s):'alles durch, jetzt Wiederholung')+'</strong>'+(pn0?' (Schritt '+(pn0.i+1)+' von '+PATH.length+')':'')+'.</p><p class="sub">Einstieg verschieben: Alle Schritte vor „'+pstepName(PATH[ps])+'“ gelten als erledigt.</p><div class="row2"><button class="btn ghost small" data-act="pst-">Früher einsteigen</button><button class="btn ghost small" data-act="pst+">Später einsteigen</button></div></div>';
+  if(canSpeak){loadVoices();h+='<div class="card story"><h3>Vorlesestimme</h3><p class="sub">Wie das Tier klingt, hängt vom Handy ab. Probiere hier Stimmen aus und tippe auf die, die dir und Selina am besten gefällt.</p><div class="row2">'+[['f','Quietschfidel'],['n','Normal'],['r','Ruhig']].map(function(x){return '<button class="btn small'+((save.vstyle||'f')===x[0]?'':' ghost')+'" data-act="vsty" data-s="'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div>';
+    var cur=pickVoice();
+    h+='<div class="row2"><button class="btn small'+(save.voice?' ghost':'')+'" data-act="voice" data-n="">Automatisch'+(cur&&!save.voice?' ('+esc(cur.name)+')':'')+'</button></div>';
+    VOICES.slice(0,12).forEach(function(v){h+='<button class="btn small'+(save.voice===v.name?'':' ghost')+'" data-act="voice" data-n="'+esc(v.name)+'">'+esc(v.name)+'</button>';});
+    if(!VOICES.length)h+='<p class="sub">Dieses Gerät meldet keine deutsche Stimme. In den Handy-Einstellungen unter Sprachausgabe kann man eine deutsche Stimme installieren.</p>';
+    h+='</div>';}
   h+='<div class="card story"><h3>Wochenbericht</h3><p>Stärken und Schwächen der letzten 7 Tage.</p><button class="btn small" data-act="report">Wochenbericht öffnen</button></div>';
   h+='<div class="card story"><h3>PIN ändern</h3><p>Dein eigener PIN. Wenn du ihn vergisst, öffnet der Master-PIN den Bereich, ohne dass etwas gelöscht wird.</p><div class="field"><label for="newpin">Neuer PIN (4 Ziffern)</label><input id="newpin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"></div><button class="btn small" data-act="pinchg">PIN speichern</button></div>';
   h+='<div class="card story"><h3>Spielstand sichern</h3><p>Der Fortschritt liegt nur auf diesem Gerät und in diesem Browser. Mit dem Code kannst du ihn sichern oder auf ein anderes Gerät mitnehmen.</p><label class="sub" for="codebox">Dein Spielstand-Code</label><textarea id="codebox" readonly>'+esc(exportCode())+'</textarea><button class="btn small" data-act="copycode">Code kopieren</button>';
@@ -4034,6 +4090,8 @@ $app.addEventListener('click',function(e){
   else if(a==='more'){S.more=!S.more;sfx('tap');render();}
   else if(a==='help'){S.help=!S.help;sfx('tap');render();}
   else if(a==='hspeak')speak(helpText());
+  else if(a==='voice'){save.voice=b.dataset.n||'';persist();render();speak('Hallo! Ich bin dein Rechen-Tier. Zusammen lernen wir ganz viel, und es macht richtig Spaß!');}
+  else if(a==='vsty'){save.vstyle=b.dataset.s;persist();render();speak('Hallo! So klinge ich jetzt. Los, wir rechnen zusammen!');}
   else if(a==='kd-new'){var kd0=pick([3,4,6,7,8,9]),kq0=rnd(6,9);S.kd={d:kd0,q:kq0};document.getElementById('kddisp').innerHTML=kdHTML();sfx('tap');}
   else if(a==='pst-'){save.pstart=Math.max(0,(save.pstart||0)-1);persist();render();}
   else if(a==='pst+'){save.pstart=Math.min(PATH.length,(save.pstart||0)+1);persist();render();}
