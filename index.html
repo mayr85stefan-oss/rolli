@@ -572,6 +572,37 @@ body.dys .tile{background:var(--card);color:var(--ink);border-color:var(--w);box
 .tempo .btn.small{padding:6px 12px;min-height:38px;font-size:.9rem}
 .tempo span{font-size:.9rem}
 .arena.awarena{height:clamp(180px,calc(100dvh - 462px),460px);min-height:180px}
+
+/* V14: Schluepf- und Wachstums-Erlebnis */
+.hstage{position:relative;min-height:230px;display:grid;place-items:center}
+.hrays{position:absolute;left:50%;top:50%;width:380px;height:380px;margin:-190px 0 0 -190px;border-radius:50%;pointer-events:none;
+  background:repeating-conic-gradient(rgba(255,214,90,.55) 0 9deg,rgba(255,214,90,0) 9deg 18deg);
+  -webkit-mask-image:radial-gradient(circle,#000 0,#000 35%,transparent 70%);mask-image:radial-gradient(circle,#000 0,#000 35%,transparent 70%);
+  animation:hspin 9s linear infinite,hfade 1s ease-out both}
+.hrays.soft{opacity:.35;animation:hspin 14s linear infinite}
+.hrays.gray{background:repeating-conic-gradient(rgba(150,210,255,.55) 0 9deg,rgba(150,210,255,0) 9deg 18deg)}
+@keyframes hspin{to{transform:rotate(360deg)}}
+@keyframes hfade{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+.hglow svg{filter:drop-shadow(0 0 14px rgba(255,214,90,.8))}
+.shake2 svg{animation-duration:.28s}
+.hburst{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:60;
+  background:radial-gradient(circle at 50% 38%,#fff 0,rgba(255,240,170,.95) 22%,rgba(255,214,90,0) 65%);animation:hburst 1.5s ease-out forwards}
+.hburst.gb{animation-delay:1.3s;opacity:0;animation-fill-mode:both}
+@keyframes hburst{0%{opacity:0;transform:scale(.3)}18%{opacity:1}100%{opacity:0;transform:scale(2.2)}}
+.hpop{animation:hpop .9s cubic-bezier(.2,1.5,.4,1) .25s both}
+@keyframes hpop{0%{transform:scale(0) rotate(-25deg);opacity:0}60%{transform:scale(1.25) rotate(6deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+.hpopin{animation:hrise .6s ease-out .5s both}
+.hpopin2{animation:hrise .6s ease-out 1.1s both}
+@keyframes hrise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.hshells{position:fixed;left:50%;top:40%;width:0;height:0;pointer-events:none;z-index:55}
+.hshells i{position:absolute;width:18px;height:12px;background:#fff;border:2px solid var(--ink);border-radius:60% 40% 50% 50%;opacity:0;animation:hshell 1.3s ease-out .1s both}
+.hshells i:nth-child(1){--dx:-120px;--dy:-90px}.hshells i:nth-child(2){--dx:110px;--dy:-100px}.hshells i:nth-child(3){--dx:-150px;--dy:10px}
+.hshells i:nth-child(4){--dx:140px;--dy:20px}.hshells i:nth-child(5){--dx:-60px;--dy:-140px}.hshells i:nth-child(6){--dx:70px;--dy:-130px}
+@keyframes hshell{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx),calc(var(--dy) + 140px)) rotate(300deg)}}
+.hstage .gpet{position:absolute;animation:gpet 1.5s ease-in-out both}
+@keyframes gpet{0%{transform:scale(1);filter:none}30%{transform:scale(1.04) rotate(-4deg)}50%{transform:scale(1.06) rotate(4deg);filter:brightness(1.6)}75%{transform:scale(1.1) rotate(-3deg);filter:brightness(3) saturate(0);opacity:1}100%{transform:scale(1.15);filter:brightness(5) saturate(0);opacity:0}}
+.hstage .gnew{animation:hpop .9s cubic-bezier(.2,1.5,.4,1) 1.35s both}
+@media (prefers-reduced-motion:reduce){.hrays{animation:none}.hburst,.hshells{display:none}}
 </style>
 <div class="app" id="app" aria-live="polite"></div>
 <script>
@@ -1339,8 +1370,10 @@ function textQ(level){
   var s1=sstage('Welche Rechnung passt zur Geschichte?',story,correct,cands,function(kk){return t[0]+' + '+t[2]+' + '+kk;},
     'Lies die Frage genau. Was passiert mit den Zahlen: kommt etwas dazu, geht etwas weg, gibt es gleiche Gruppen oder wird verteilt?',
     'Die Rechnung heißt '+correct+'.');
-  var s2=stg('Jetzt rechnest du die Rechnung aus.',story+'<div class="bigexpr">'+correct+' = ?</div>',res,[res+1,res-1,res+10,res-10,ltr(t)],
-    'Denk an Punkt vor Strich: Zuerst die Mal- und Geteilt-Aufgaben.',(red.segs.length?'Erst: '+red.segs.join(' und ')+'. ':'')+correct+' = '+res+'.');
+  var single=t.length===3,opOf=t[1];
+  var h2=single?(opOf==='+'?'Plus heißt: Es kommt etwas dazu. Zähle beide Zahlen zusammen, am besten in Schritten (erst die Zehner, dann die Einer).':opOf===MINUS?'Minus heißt: Es geht etwas weg. Nimm die kleine Zahl von der großen weg, am besten in Schritten.':opOf===DOT?'Mal heißt: gleich große Gruppen zusammen. Denk an die Reihe von '+t[0]+' oder von '+t[2]+'.':'Geteilt heißt: gerecht verteilen. Frag dich: Wie oft passt '+t[2]+' in '+t[0]+'?'):'Denk an Punkt vor Strich: Zuerst die Mal- und Geteilt-Aufgaben.';
+  var e2=single?(opOf==='+'?'Hier kommt etwas dazu, also wird zusammengezählt.':opOf===MINUS?'Hier geht etwas weg, also wird abgezogen.':opOf===DOT?'Gleich große Gruppen, also Mal.':'Gerecht verteilen, also Geteilt.'):'Erst: '+red.segs.join(' und ')+'.'+(red.out.length>1?' Dann: '+red.out.join(' ')+' = '+res+'.':'');
+  var s2=stg('Jetzt rechnest du die Rechnung aus.',story+'<div class="bigexpr">'+correct+' = ?</div>',res,[res+1,res-1,res+10,res-10,ltr(t)],h2,e2);
   s1.text=true;s2.text=true;
   var fb=build(String(res),pos([res+1,res-1,res+10,res-10,ltr(t)]).map(String),function(kk){return String(res+17+kk);});
   return {prompt:story,big:'',text:true,choices:fb.choices,answer:fb.answer,
@@ -1514,7 +1547,7 @@ function circleMane(r,cy,a,b,c){
 /* ===== Ei ===== */
 var EGGS=[{id:'rose',name:'Rosa Ei',a:'#FFC6DA',b:'#FF7FB6'},{id:'blau',name:'Blaues Ei',a:'#C9E4FF',b:'#4C9BF5'},{id:'gruen',name:'Grünes Ei',a:'#CFF5DC',b:'#38B873'},{id:'gelb',name:'Gelbes Ei',a:'#FFF0B8',b:'#F2A900'}];
 var EGGP='M50 7C71 7 85 40 85 62C85 82 69 95 50 95C31 95 15 82 15 62C15 40 29 7 50 7Z';
-function eggLevel(n){return n>=10?3:n>=7?2:n>=4?1:0;}
+function eggLevel(n){return Math.max(0,Math.min(3,n));}
 function eggSvg(col,lv,size){
   var e=EGGS.filter(function(x){return x.id===col;})[0]||EGGS[0],id='eg'+e.id,pat='';
   if(e.id==='rose'){[[35,34],[60,30],[48,52],[28,66],[70,62],[52,80],[40,22]].forEach(function(p){pat+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5" fill="'+e.b+'"/>';});}
@@ -1700,8 +1733,8 @@ function loadFrom(o){
   if(o.pet&&typeof o.pet==='object'){
     if(typeof o.pet.name==='string')s.pet.name=o.pet.name.slice(0,20);
     if(typeof o.pet.kind==='string'&&CK.some(function(c){return c.id===o.pet.kind;}))s.pet.kind=o.pet.kind;
-    if(o.pet.egg&&typeof o.pet.egg==='object'&&EGGS.some(function(e){return e.id===o.pet.egg.c;}))s.pet.egg={c:o.pet.egg.c,n:Math.max(0,Math.min(10,Math.floor(num(o.pet.egg.n,0))))};
-    s.pet.hunger=num(o.pet.hunger,s.pet.hunger);s.pet.fun=num(o.pet.fun,s.pet.fun);s.pet.xp=num(o.pet.xp,0);s.pet.last=num(o.pet.last,Date.now());
+    if(o.pet.egg&&typeof o.pet.egg==='object'&&EGGS.some(function(e){return e.id===o.pet.egg.c;}))s.pet.egg={c:o.pet.egg.c,n:Math.max(0,Math.min(EGGN,Math.floor(num(o.pet.egg.n,0))))};
+    s.pet.hunger=num(o.pet.hunger,s.pet.hunger);s.pet.fun=num(o.pet.fun,s.pet.fun);s.pet.xp=num(o.pet.xp,0);s.pet.last=num(o.pet.last,Date.now());if(typeof o.pet.sc==='number')s.pet.sc=Math.max(0,Math.min(3,Math.floor(o.pet.sc)));
   }
   if(Array.isArray(o.album))s.album=o.album.filter(function(a){return a&&typeof a.k==='string'&&typeof a.name==='string';}).slice(-60).map(function(a){return {k:a.k,name:a.name.slice(0,20),d:String(a.d||'').slice(0,10)};});
   if(o.love&&typeof o.love==='object')s.love={d:String(o.love.d||''),n:Math.floor(num(o.love.n,0)),t:Math.floor(num(o.love.t,0))};
@@ -1774,7 +1807,10 @@ function streakDays(){
 var TH=[0,35,100,200],GRAD=300,STAGES=['Baby','Kind','Schlaukopf','Professor'];
 function stageOf(xp){return xp>=200?3:xp>=100?2:xp>=35?1:0;}
 function isEgg(){return !save.pet.kind&&!!save.pet.egg;}
-function hatchReady(){return isEgg()&&save.pet.egg.n>=10;}
+var EGGN=3;
+function hatchReady(){return isEgg()&&save.pet.egg.n>=EGGN;}
+function eggWarm(k){if(!isEgg()||!(k>0))return false;var e=save.pet.egg,b=e.n;e.n=Math.min(EGGN,e.n+k);return e.n>b;}
+function growPending(){var p=save.pet;if(!p||!p.kind)return false;var st=stageOf(p.xp);if(typeof p.sc!=='number'){p.sc=st;return false;}return st>p.sc;}
 function gradReady(){return !!save.pet.kind&&save.pet.xp>=GRAD;}
 function tick(){
   var p=save.pet,now=Date.now(),h=Math.max(0,(now-p.last)/36e5);
@@ -2139,7 +2175,7 @@ function initDemo(id){
 /* ---------- Ansichten ---------- */
 var INTRO=[
  {k:'say',t:'Klopf, klopf! Hier ist dein Ei, Lehrerin {n}. Es ist ganz warm und gemütlich da drin. Wer wohl darin wohnt?'},
- {k:'say',t:'Wenn du Aufgaben löst, wird das Ei wärmer. Nach zehn richtigen Antworten schlüpft dein Tier. Dann bist du seine Lehrerin und bringst ihm alles bei!'},
+ {k:'say',t:'Wenn du Aufgaben löst, wird das Ei wärmer. Nach drei richtigen Antworten schlüpft dein Tier. Dann bist du seine Lehrerin und bringst ihm alles bei!'},
  {k:'say',t:'Für richtige Antworten gibt es Rechenmünzen. Damit kaufst du Futter und spielst mit deinem Tier. Auf der Startseite zeigt dir der große Knopf „Los, Rolli!“, was als Nächstes dran ist.'}
 ];
 function toolsHTML(){
@@ -2169,7 +2205,7 @@ function homeView(){
   persist();
   var p=save.pet,egg=isEgg(),wish=wishInfo(),m=(wish&&wish.k==='new')?'oops':petMood(),st=stageOf(p.xp),today=dayKey(),dn=save.days[today]||0,goal=5;
   var nxt=TH[st+1],prog,plabel,pval;
-  if(egg){prog=p.egg.n*10;plabel='Wärme';pval=p.egg.n+' von 10';}
+  if(egg){prog=p.egg.n/EGGN*100;plabel='Wärme';pval=p.egg.n+' von '+EGGN;}
   else if(st===3){prog=Math.min(100,(p.xp-TH[3])/(GRAD-TH[3])*100);plabel='Abschluss';pval=Math.round(prog)+' %';}
   else{prog=(p.xp-TH[st])/(nxt-TH[st])*100;plabel='Wissen';pval=STAGES[st];}
   if(!S.say)S.say=egg?(hatchReady()?'Es klopft ganz doll von innen! Ich glaube, ich will schlüpfen!':pick(['Mmh, hier drin ist es kuschelig. Löst du Aufgaben? Dann wird es noch wärmer!','Klopf, klopf. Ich bin noch im Ei. Rechne mit mir, dann schlüpfe ich bald!'])):homeMsg();
@@ -2605,7 +2641,7 @@ function quizView(){
   var h='<div class="topbar"><button class="back" data-act="'+((S.mode==='check'||S.mode==='mix')?'home':'world')+'" data-id="'+S.w+'">‹ Abbrechen</button><div class="dots" role="img" aria-label="Aufgabe '+(S.i+1)+' von '+N+'">';
   for(var i=0;i<N;i++)h+='<span class="dot '+(S.results[i]||(i===S.i?'now':''))+'"></span>';
   h+='</div><span class="tag">'+(S.mode==='check'?'Check':S.mode==='mix'?'Rechen-Mix':'Stufe '+S.l)+'</span></div>';
-  var egg=isEgg(),bw=egg?save.pet.egg.n*10:Math.round(p.hunger);
+  var egg=isEgg(),bw=egg?Math.round(save.pet.egg.n/EGGN*100):Math.round(p.hunger);
   h+='<div class="petbar">'+pet(done&&S.solved?'wow':petMood(),44)+'<div class="bar" role="img" aria-label="'+(egg?'Wärme':'Bauch')+' '+bw+' von 100"><i class="b-hunger" style="width:'+bw+'%"></i></div><span>'+(egg?'Wärme':'Bauch')+'</span></div>';
   if(S.g&&q.big&&q.big.indexOf('<pre')<0)h+='<p class="sub">'+q.prompt+' '+q.big+'</p>';
   h+='<div class="card q">'+(S.g?'<p class="sub">Schritt '+(S.g.si+1)+' von '+gl+'</p>':'')+'<p class="q-prompt">'+(cur.big?cur.prompt:'')+'</p><div class="q-big'+(cur.big?'':' text')+'">'+(cur.big||cur.prompt)+'</div></div>';
@@ -2633,7 +2669,7 @@ function resultView(){
   var msg=st===3?'Wow, du bist eine Rechenprofi-Lehrerin!':st===2?'Stark! Das sitzt schon richtig gut.':'Geschafft! Jede Runde macht dich besser.';
   var h='<div class="card result">'+pet(st>=2?'wow':'happy',100)+'<h2>'+msg+'</h2><div class="bigstars" role="img" aria-label="'+st+' von 3 Sternen">'+starSvg(st>=1)+starSvg(st>=2)+starSvg(st>=3)+'</div>';
   h+='<p>'+S.gold+' von '+S.qs.length+' Aufgaben gleich beim ersten Versuch richtig.</p><p><span class="chip">+'+S.lvCoins+' Münzen</span></p>';
-  if(isEgg())h+='<p>Das Ei ist auf '+p.egg.n+' von 10 Wärme gewachsen.</p></div>';
+  if(isEgg())h+='<p>Das Ei ist auf '+p.egg.n+' von '+EGGN+' Wärme gewachsen.</p></div>';
   else h+='<p><strong>'+pname()+'</strong> ist jetzt zu '+Math.round(p.hunger)+' % satt und hat dazugelernt.'+(S.grew?' Es ist gewachsen: '+STAGES[stageOf(p.xp)]+'!':'')+'</p></div>';
   if(hatchReady())h+='<button class="btn" data-act="tohatch">Das Ei klopft! Zum Schlüpfen</button>';
   if(S.l<3){
@@ -2668,14 +2704,25 @@ function startHatch(){S.newKind=chooseKind();S.ht=0;sfx('tap');show('hatch');}
 function hatchView(){
   var h='';
   if(S.ht<3){
-    h+='<div class="talk"><div class="bubble t-left" style="grid-column:1/-1">Es wackelt und klopft ganz doll! Tippe das Ei an, damit es aufgeht ('+S.ht+' von 3).</div></div>';
-    h+='<div class="center"><div class="petwrap shake" data-act="hatchtap" role="button" aria-label="Ei antippen">'+eggSvg(save.pet.egg?save.pet.egg.c:'rose',Math.min(3,1+S.ht),190)+'</div></div>';
+    var msg=S.ht===0?'Es wackelt und klopft ganz doll! Tippe das Ei an, damit es aufgeht.':S.ht===1?'Es knackt! Da ist schon ein Riss. Noch zweimal tippen!':'Gleich ist es so weit! Noch einmal tippen!';
+    h+='<div class="talk"><div class="bubble t-left" style="grid-column:1/-1">'+msg+' ('+S.ht+' von 3)</div></div>';
+    h+='<div class="center hstage"><i class="hrays soft"></i><div class="petwrap shake'+(S.ht>=1?' shake2':'')+' hglow" data-act="hatchtap" role="button" aria-label="Ei antippen">'+eggSvg(save.pet.egg?save.pet.egg.c:'rose',Math.min(3,1+S.ht),190)+'</div></div>';
   }else{
     var c=ckOf(S.newKind);
-    h+='<div class="bubble t-down">Überraschung! Es ist ein '+c.label+'! Wie soll es heißen?</div>';
-    h+='<div class="center pop">'+creature(S.newKind,0,'wow',200)+'</div>';
-    h+='<div class="card story"><div class="field"><label for="pname">Name deines Tieres</label><input id="pname" type="text" maxlength="20" autocomplete="off" value="'+esc(c.name)+'"></div></div><button class="btn" data-act="petgo">Das ist mein Tier!</button>';
+    h+='<div class="hburst" aria-hidden="true"></div><div class="hshells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>';
+    h+='<div class="bubble t-down hpopin">Überraschung! Es ist ein '+c.label+'! Wie soll es heißen?</div>';
+    h+='<div class="center hstage"><i class="hrays"></i><div class="hpop">'+creature(S.newKind,0,'wow',200)+'</div></div>';
+    h+='<div class="card story hpopin2"><div class="field"><label for="pname">Name deines Tieres</label><input id="pname" type="text" maxlength="20" autocomplete="off" value="'+esc(c.name)+'"></div></div><button class="btn hpopin2" data-act="petgo">Das ist mein Tier!</button>';
   }
+  return h;
+}
+function growView(){
+  var p=save.pet,from=S.gfrom||0,to=S.gto||1,nm=esc(p.name);
+  var h='<div class="hburst gb" aria-hidden="true"></div>';
+  h+='<div class="bubble t-down hpopin">Etwas passiert mit '+nm+'! ...</div>';
+  h+='<div class="center hstage"><i class="hrays gray"></i><div class="gpet">'+creature(p.kind,from,'wow',200)+'</div><div class="gnew">'+creature(p.kind,to,'love',230)+'</div></div>';
+  h+='<div class="card why hpopin2"><strong>'+nm+' ist gewachsen!</strong><p>'+nm+' ist jetzt ein <strong>'+STAGES[to]+'</strong>. Das hast du mit deinem Rechnen geschafft!</p></div>';
+  h+='<button class="btn hpopin2" data-act="growok">Toll! Weiter</button>';
   return h;
 }
 function gradView(){
@@ -3472,7 +3519,7 @@ function rankSync(){
   });
   return ch;
 }
-function addTotal(n){if(n>0){save.total=(save.total||0)+n;rankSync();}}
+function addTotal(n){if(n>0){save.total=(save.total||0)+n;eggWarm(n);rankSync();}}
 function rankPending(){return rankIdx()>(save.rankSeen||0);}
 function rankUpCardHTML(){
   var ri=rankIdx(),R=RANKS[ri];
@@ -3666,6 +3713,7 @@ function afterRender(){
     if(S.played<3)setTimeout(function(){if(S.view==='gameresult'){confetti();}},250);
     var rp=document.getElementById('rpet');if(rp&&S.played>=3)rp.classList.remove('dance');
   }
+  if(S.view==='grow'&&!S.gfx){S.gfx=1;sfx('big');setTimeout(function(){if(S.view==='grow'){sfx('yay');confetti();}},1500);setTimeout(function(){if(S.view==='grow')confetti();},2600);}
   if(S.view==='home'&&rankPending()&&!S.rankFx){S.rankFx=1;setTimeout(function(){if(S.view==='home'){sfx('rank');confetti();}},400);}
   if(S.view==='home'&&!S.greeted){
     S.greeted=1;
@@ -3822,7 +3870,7 @@ function render(){
   if(S.view==='basis'||(S.view==='dialog'&&S.dlg&&S.dlg.then==='basis'))wv='basis';
   $app.setAttribute('data-world',wv||'');
   document.body.classList.toggle('dys',!!save.dys);
-  var V={gintro:gintroView,basis:basisView,pin:pinView,glvl:glvlView,hatch:hatchView,grad:gradView,album:albumView,balloon:balloonView,race:raceView,names:namesView,pick:pickView,home:homeView,shop:shopView,play:playView,catch:catchView,memory:memoryView,gameresult:gameResultView,world:worldView,dialog:dialogView,quiz:quizView,result:resultView,checkresult:checkResultView,report:reportView,parent:parentView};
+  var V={gintro:gintroView,basis:basisView,pin:pinView,glvl:glvlView,hatch:hatchView,grow:growView,grad:gradView,album:albumView,balloon:balloonView,race:raceView,names:namesView,pick:pickView,home:homeView,shop:shopView,play:playView,catch:catchView,memory:memoryView,gameresult:gameResultView,world:worldView,dialog:dialogView,quiz:quizView,result:resultView,checkresult:checkResultView,report:reportView,parent:parentView};
   var html=V[S.view]();
   if(S.help&&S.view!=='pin')html=helpCardHTML()+html;
   if(S.pOK&&S.view!=='pin')html='<div class="pstrip'+(S.test?' test':'')+'"><span>'+(S.test?'Testmodus. Selinas Stand bleibt unverändert.':'Eltern-Modus aktiv')+'</span>'+((S.test&&S.view!=='parent')?'<button data-act="ptools">Werkzeuge</button>':'')+'<button data-act="plogout">Beenden</button></div>'+html;
@@ -3832,6 +3880,10 @@ function render(){
 }
 function show(view,patch){
   if(patch)for(var k in patch)S[k]=patch[k];
+  if(!S.pOK&&(view==='home'||view==='play')){
+    if(hatchReady()){S.newKind=chooseKind();S.ht=0;S.hfx=0;view='hatch';sfx('big');}
+    else if(growPending()){S.gfrom=save.pet.sc;S.gto=stageOf(save.pet.xp);S.gfx=0;save.pet.sc=S.gto;persist();view='grow';}
+  }
   if(view!==S.view){S.help=false;S.nudged=0;}
   S.view=view;render();window.scrollTo(0,0);
 }
@@ -3898,7 +3950,7 @@ function finalizeQ(first,rev){
   if(first){S.gold++;S.streak++;if(q.rev)removeReview(q);}else S.streak=0;
   S.results[S.i]=first?'gold':'silver';
   S.msg=praise(first)+(S.grew?' {pet} ist gewachsen!':'');
-  if(isEgg()){var eg=save.pet.egg;eg.n=Math.min(10,eg.n+1);S.msg=(first?'Richtig! ':'Geschafft! ')+(eg.n>=10?'Es klopft von innen: Das Ei will schlüpfen!':'Das Ei wird wärmer ('+eg.n+' von 10).');}
+  if(isEgg()){eggWarm(1);var eg=save.pet.egg;S.msg=(first?'Richtig! ':'Geschafft! ')+(eg.n>=EGGN?'Es klopft von innen: Das Ei will schlüpfen!':'Das Ei wird wärmer ('+eg.n+' von '+EGGN+').');}
   persist();sfx(S.grew?'big':'yum');
 }
 function answer(idx){
@@ -3992,7 +4044,7 @@ $app.addEventListener('click',function(e){
   else if(a==='topt'){
     var td=S.dlg,tq=td.tq[td.ti],ti2=+b.dataset.i;
     if(td.tdone)return;
-    if(ti2===tq.answer){td.tdone=true;sfx('yum');}
+    if(ti2===tq.answer){td.tdone=true;sfx('yum');eggWarm(1);persist();}
     else{td.tpicked.push(ti2);sfx('tap');if(td.tpicked.length>=2){td.tdone=true;td.trev=true;}}
     render();
   }
@@ -4021,7 +4073,7 @@ $app.addEventListener('click',function(e){
   else if(a==='dopt'){
     var dd=S.dlg,st=dd.steps[dd.i],oi=+b.dataset.i;
     if(dd.solved)return;
-    if(oi===st.ok){dd.solved=true;sfx('yum');}else{dd.picked.push(oi);sfx('oops');}
+    if(oi===st.ok){dd.solved=true;sfx('yum');eggWarm(1);persist();}else{dd.picked.push(oi);sfx('oops');}
     render();
   }
   else if(a==='bags-new'){S.demo={a:rnd(1,5),b:rnd(2,4),c:rnd(2,4)};document.getElementById('demo').innerHTML=bagsHTML();sfx('tap');}
@@ -4103,7 +4155,8 @@ $app.addEventListener('click',function(e){
   else if(a==='racea')raceAnswer(+b.dataset.i);
   else if(a==='album')show('album');
   else if(a==='tohatch')startHatch();
-  else if(a==='hatchtap'){S.ht++;sfx(S.ht>=3?'yay':'big');if(S.ht>=3)confetti();render();}
+  else if(a==='hatchtap'){S.ht++;sfx(S.ht>=3?'yay':'big');if(S.ht>=3){S.hfx=1;confetti();setTimeout(function(){if(S.view==='hatch')confetti();},900);}render();}
+  else if(a==='growok'){sfx('tap');show('home');}
   else if(a==='grad'){confetti();sfx('yay');show('grad');}
   else if(a==='gradgo'){var pp=save.pet;save.album.push({k:pp.kind,name:pp.name,d:dayKey()});save.coins+=20;save.pet={kind:null,egg:null,name:'',hunger:40,fun:40,xp:0,last:Date.now()};persist();S.pk=null;S.say='';sfx('big');show('pick');}
   else if(a==='daily'){var td=dayKey();if(save.daily.d===td&&save.daily.got)return;save.daily={d:td,got:true};save.coins+=5;persist();S.say='Schatz gefunden! Du bekommst 5 Münzen.';sfx('coin');confetti();render();}
@@ -4128,7 +4181,7 @@ $app.addEventListener('click',function(e){
   else if(a==='tdaily'){save.days[dayKey()]=Math.max(5,save.days[dayKey()]||0);save.tag={d:dayKey(),l:1,s:1,p:1};save.daily={d:'',got:false};persist();S.codeMsg='Alle drei Stationen erfüllt. Auf der Startseite wartet der Schatz.';toast(S.codeMsg);render();}
   else if(a==='tegg'){
     if(!isEgg()){S.codeMsg='Gerade ist kein Ei da. Unten unter „Neues Ei“ kannst du eins starten.';toast(S.codeMsg);render();return;}
-    save.pet.egg.n=9;persist();S.codeMsg='Das Ei ist auf 9 von 10. Eine richtige Antwort noch!';toast(S.codeMsg);render();
+    save.pet.egg.n=EGGN-1;persist();S.codeMsg='Das Ei ist auf '+(EGGN-1)+' von '+EGGN+'. Eine richtige Antwort noch!';toast(S.codeMsg);render();
   }
   else if(a==='tstage'){
     if(!save.pet.kind){S.codeMsg='Das Ei muss erst schlüpfen. Dann geht das hier.';toast(S.codeMsg);render();return;}
@@ -4155,7 +4208,7 @@ $app.addEventListener('click',function(e){
   }
   else if(a==='petgo'){
     var pn=document.getElementById('pname'),ck=ckOf(S.newKind);
-    save.pet={kind:S.newKind,egg:null,name:((pn&&pn.value.trim())||ck.name).slice(0,20),hunger:40,fun:40,xp:0,last:Date.now()};persist();sfx('big');confetti();S.say='Hallo Lehrerin {n}! Ich bin da! Danke fürs Warmhalten!';show('home');
+    save.pet={kind:S.newKind,egg:null,name:((pn&&pn.value.trim())||ck.name).slice(0,20),hunger:40,fun:40,xp:0,sc:0,last:Date.now()};persist();sfx('big');confetti();S.say='Hallo Lehrerin {n}! Ich bin da! Danke fürs Warmhalten!';show('home');
   }
   else if(a==='names'){
     var un=document.getElementById('uname');
